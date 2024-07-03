@@ -25,9 +25,6 @@ public:
 		int32 DamegeLevel;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Damage")
-		TArray<UNiagaraSystem*> ParticleSystem;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Damage")
 		bool bContinuousDamage;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Damage")
@@ -36,8 +33,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Damage")
 		float ContinuousDamageRatio;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Damage")
-		float SkillForwardTime;
 };
 
 
@@ -68,6 +63,8 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "HealthComponent")
 		FOnHealthChangedSignatrue OnHealthChanged;
+
+	
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite , Category = "HealthComponent")

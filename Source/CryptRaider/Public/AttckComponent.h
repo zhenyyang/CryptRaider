@@ -9,13 +9,14 @@
 class UDamageType;
 class UNiagaraSystem;
 class USHealthComponent;
-
+class USkillCompone;
 
 UENUM()
 enum class AttackMode : uint8
 {
-	RangedAttack = 0			UMETA(DisplayName = "RangedAttack"),
-	RangedAttackRange = 1		UMETA(DisplayName = "RangedAttackRange")
+	LineAttack = 0			UMETA(DisplayName = "LineAttack"),
+	SphereAttack = 1		UMETA(DisplayName = "SphereAttack"),
+	BoxAttack = 2			UMETA(DisplayName = "BoxAttack")
 };
 
 UENUM()
@@ -48,13 +49,23 @@ public:
 
 	//数值or射线检测的attack
 protected:
-	FHitResult RangedAttack(FVector StartLocation, FVector EndLocation);
+	FHitResult LineAttackTrace(FVector StartLocation, FVector EndLocation);
 
-	TArray<FHitResult> RangedAttackRange(FVector StartLocation,FVector EndLocation);
+	TArray<FHitResult> SphereAttackTrace(FVector StartLocation,FVector EndLocation);
 
-	void AttackEffect();
+	TArray<FHitResult> BoxAttackTrace(FVector StartLocation, FVector EndLocation, FVector Range);
+
+	void LineAttack();
+
+	void SphereAttack();
+
+	void BoxAttack();
 	
+	void ExcludeRedundantObjects(TArray<FHitResult> HitArray, TArray<FHitResult>& OutHits);
+
 	void GetEnemyLocation();
+
+
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Attack Component")
@@ -76,11 +87,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Attack Component")
 		TSubclassOf<UDamageType> DamageType;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Component")
+	//射线检测碰撞距离参数
+	UPROPERTY(EditAnywhere, Category = "Attack Component Distance Param")
 		float AttackDistance_Y;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Component")
+	UPROPERTY(EditAnywhere, Category = "Attack Component Distance Param")
 		float AttackDistance_J;
+
+	UPROPERTY(EditAnywhere, Category = "Attack Component Distance Param")
+		FVector m_Range;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Component")
 		UNiagaraSystem* Exop_ParticleSystem;
@@ -89,11 +104,16 @@ public:
 		UParticleSystem* Cx_ParticleSystem;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Component")
-		TSubclassOf<UActorComponent> ComponentClass;
+		TSubclassOf<UActorComponent> HealthComp;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Component")
+		TSubclassOf<UActorComponent> SkillComp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack Component")
 		TArray<FName> Tags;
 	
+	UPROPERTY(BlueprintReadWrite, Category = "Attack Component")
+		TArray<AActor*> ActorsToIgnore;
 
 private:
 
@@ -112,4 +132,7 @@ private:
 	USHealthComponent* Health;
 
 	FTimerHandle Handle;
+
+	USkillCompone* Skill;
+
 };

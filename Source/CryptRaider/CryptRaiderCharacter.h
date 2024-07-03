@@ -70,6 +70,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 		class UAttckComponent* AttackComp;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+		class USkillCompone* SkillComp;
+
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 		void Attack_Exe();
 

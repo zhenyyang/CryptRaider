@@ -8,8 +8,9 @@
 #include "Components/CapsuleComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "SHealthComponent.h"
 #include "AttckComponent.h"
+#include "SHealthComponent.h"
+#include "SkillCompone.h"
 #include "kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
@@ -27,6 +28,7 @@ ACryptRaiderCharacter::ACryptRaiderCharacter()
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 	HealthComp = CreateDefaultSubobject<USHealthComponent>(TEXT("Healthcomp"));
 	AttackComp = CreateDefaultSubobject<UAttckComponent>(TEXT("Attackcomp"));
+	SkillComp = CreateDefaultSubobject<USkillCompone>(TEXT("Skillcomp"));
 
 }
 
@@ -125,6 +127,6 @@ void ACryptRaiderCharacter::OnHealthChanged(USHealthComponent* OwnerHealthComp, 
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		GetCharacterMovement()->StopMovementImmediately();
 		DetachFromControllerPendingDestroy();
-		SetLifeSpan(3.0f);
+		SetLifeSpan(2.0f);
 	}
 }

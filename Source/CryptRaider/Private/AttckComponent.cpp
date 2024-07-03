@@ -7,6 +7,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 #include "SHealthComponent.h"
+#include "SkillCompone.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
@@ -16,7 +17,7 @@ UAttckComponent::UAttckComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-	m_CurrentAttackActive = AttackMode::RangedAttack;
+	m_CurrentAttackActive = AttackMode::LineAttack;
 	m_ETraceChannel = ETraceTypeQuery::TraceTypeQuery1;
 	m_CurrentAttackSkill = AttackSkill::Rifle;
 
@@ -24,8 +25,8 @@ UAttckComponent::UAttckComponent()
 	AttackDistance_Y = 3000;
 	AttackDistance_J = 1200;
 	m_iAttackType = 1;
+	ActorsToIgnore.Add(nullptr);
 
-	Tags.Add(FName(""));
 }
 
 
@@ -33,8 +34,8 @@ UAttckComponent::UAttckComponent()
 void UAttckComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	Health = Cast<USHealthComponent>(GetOwner()->GetComponentByClass(ComponentClass));
-
+	Health = Cast<USHealthComponent>(GetOwner()->GetComponentByClass(HealthComp));
+	Skill = Cast<USkillCompone>(GetOwner()->GetComponentByClass(SkillComp));
 }
 
 
@@ -46,52 +47,95 @@ void UAttckComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 	// ...
 }
 
-TArray<FHitResult> UAttckComponent::RangedAttackRange(FVector StartLocation, FVector EndLocation)
+TArray<FHitResult> UAttckComponent::SphereAttackTrace(FVector StartLocation, FVector EndLocation)
 {
-	TArray<AActor*> ActorsToIgnore;
 	TArray<FHitResult> HitArray;
 	TArray<FHitResult> OutHits;
-	FString HitTagEnemy;
-	FString HitTagEnemyFilter;
+	
+	//FString HitTagEnemy;
+	//FString HitTagEnemyFilter;
 
 	bool HitActor = UKismetSystemLibrary::SphereTraceMulti(GetWorld(), EndLocation, EndLocation, m_FRadius,
 		m_ETraceChannel, false, ActorsToIgnore, EDrawDebugTrace::Persistent,
 		HitArray, true, FLinearColor::Red, FLinearColor::Green, 5);
-
+	
 	if (HitActor) {
-		int32 len_tag1 = HitArray.Num();
-		for (int i = 0; i < len_tag1; i++) {
-			if (i == (len_tag1 - 1)) {
-				break;
-			}
-			FHitResult Hit = HitArray[i];
-			bool Tag_A = HitArray[i].GetActor()->Tags.Contains(Tags[0]);
-			bool Tag_B = HitArray[i].GetActor()->Tags.Contains(Tags[1]);
-			if (Tag_A) {
-				OutHits.Add(Hit);
-			}
-			if (Tag_B) {
-				HitTagEnemy = HitArray[i].GetActor()->Tags[1].ToString();
-				HitTagEnemyFilter = HitArray[i + 1].GetActor()->Tags[1].ToString();
-			}
-		}
-		
-		int32 len_tag2 = OutHits.Num();
-		for (int i = len_tag2 -1 ; i > 0; i--) {
-			if (HitTagEnemy.Equals(HitTagEnemyFilter)) {
-				OutHits.RemoveAt(i);
-			}
-		}
+		ExcludeRedundantObjects(HitArray, OutHits);
 	}
-
 	return OutHits;
 
 }
 
-void UAttckComponent::AttackEffect()
+TArray<FHitResult> UAttckComponent::BoxAttackTrace(FVector StartLocation, FVector EndLocation, FVector Range)
 {
-		
+	TArray<FHitResult> HitArray;
+	TArray<FHitResult> OutHits;
+
+	bool HitActor = UKismetSystemLibrary::BoxTraceMulti(GetWorld(), StartLocation, EndLocation, Range,FRotator(0.f),
+		m_ETraceChannel, false, ActorsToIgnore, EDrawDebugTrace::Persistent,
+		HitArray, true, FLinearColor::Red, FLinearColor::Green, 5);
+	if (HitActor) {
+		ExcludeRedundantObjects(HitArray, OutHits);
+	}
+
+	return OutHits;
 }
+
+void UAttckComponent::LineAttack()
+{
+
+}
+
+void UAttckComponent::SphereAttack()
+{
+	FVector Start;
+	FVector End;
+
+	Start = ReleaseDistance(AttackDistance_J)[0];
+	End = ReleaseDistance(AttackDistance_J)[1];
+	//处理特效
+	Exop_ParticleSystem = Skill->GetBaseSkillByAttackType(m_iAttackType).ParticleSystem;
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Exop_ParticleSystem,
+		End, FRotator(0.0f), FVector(1.0f), true, true, ENCPoolMethod::None, true);
+	TArray<FHitResult> HitArr = SphereAttackTrace(Start, End);
+	FHitResult Hit;
+	for (int i = 0; i < HitArr.Num(); i++) {
+		Hit = HitArr[i];
+		m_fDamege = Health->DemageC(m_iAttackType);
+		//射线检测的时候应用伤害
+		if (Hit.bBlockingHit) {
+			AActor* HitActor = Hit.GetActor();
+			UGameplayStatics::ApplyPointDamage(HitActor, m_fDamege, End, Hit,
+				GetOwner()->GetInstigatorController(), GetOwner(), DamageType);
+
+		}
+	}
+}
+
+void UAttckComponent::BoxAttack()
+{
+	FVector Start = ReleaseDistance(AttackDistance_Y)[0];
+	FVector End = ReleaseDistance(AttackDistance_Y)[1];
+
+	Exop_ParticleSystem = Skill->GetBaseSkillByAttackType(m_iAttackType).ParticleSystem;
+	TArray<FHitResult> HitArr = BoxAttackTrace(Start, End, m_Range);
+
+	FHitResult Hit;
+	for (int i = 0; i < HitArr.Num(); i++) {
+		Hit = HitArr[i];
+		m_fDamege = Health->DemageC(m_iAttackType);
+		//射线检测的时候应用伤害
+		if (Hit.bBlockingHit) {
+			AActor* HitActor = Hit.GetActor();
+			UGameplayStatics::ApplyPointDamage(HitActor, m_fDamege, End, Hit,
+				GetOwner()->GetInstigatorController(), GetOwner(), DamageType);
+
+		}
+	}
+}
+
+
+
 
 void UAttckComponent::GetEnemyLocation()
 {
@@ -113,10 +157,10 @@ void UAttckComponent::GetEnemyLocation()
 		ACharacter* character = Cast<ACharacter>(Actors[0]);
 		bool IsActive = character->GetCharacterMovement()->IsActive();
 		if (IsActive && minDistance > 350) {
-			minDistance = minDistance - 300 * Health->m_BasicDamage[0].SkillForwardTime;
+			minDistance = minDistance - 300 * Skill->m_BaseSkill[0].SkillForwardTime;
 		}
 		else {
-			minDistance = minDistance - 0 * Health->m_BasicDamage[0].SkillForwardTime;
+			minDistance = minDistance - 0 * Skill->m_BaseSkill[0].SkillForwardTime;
 		}
 	
 		AttackDistance_J = minDistance;
@@ -126,28 +170,55 @@ void UAttckComponent::GetEnemyLocation()
 		AttackDistance_J = 1200;
 	}
 
-	FVector Start;
-	FVector End;
+	SphereAttack();
 
-	Start = ReleaseDistance(AttackDistance_J)[0];
-	End = ReleaseDistance(AttackDistance_J)[1];
-	//处理特效
-	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Exop_ParticleSystem,
-		End, FRotator(0.0f), FVector(1.0f), true, true, ENCPoolMethod::None, true);
-	TArray<FHitResult> HitArr = RangedAttackRange(Start, End);
-	FHitResult Hit;
-	for (int i = 0; i < HitArr.Num(); i++) {
-		Hit = HitArr[i];
-		m_fDamege = Health->DemageC(m_iAttackType);
-		//射线检测的时候应用伤害
-		if (Hit.bBlockingHit) {
-			AActor* HitActor = Hit.GetActor();
-			UGameplayStatics::ApplyPointDamage(HitActor, m_fDamege, End, Hit,
-				GetOwner()->GetInstigatorController(), GetOwner(), DamageType);
+}
 
+void UAttckComponent::ExcludeRedundantObjects(TArray<FHitResult> HitArray, TArray<FHitResult>& OutHits)
+{
+	int32 len_tag1 = HitArray.Num();
+	for (int i = 0; i < len_tag1 - 1; i++) {
+		int tempIndex = i + 1;
+		for (int j = i + 1; j < len_tag1; j++) {
+			if (HitArray[i].GetActor()->GetFName() == HitArray[j].GetActor()->GetFName()) {
+				FHitResult temp = HitArray[j];
+				HitArray[j] = HitArray[tempIndex];
+				HitArray[tempIndex] = temp;
+				tempIndex++;
+			}
 		}
 	}
+
+	//OutHits.Add(HitArray[0]);
+	for (int i = 0; i < len_tag1; i++) {
+		//FHitResult Hit = HitArray[i];
+		//bool Tag_A = HitArray[i].GetActor()->Tags.Contains(Tags[0]);
+		//bool Tag_B = HitArray[i].GetActor()->Tags.Contains(Tags[1]);
+		for (int j = i + 1; j < len_tag1; j++) {
+			if (HitArray[i].GetActor()->GetFName() != HitArray[j].GetActor()->GetFName()) {
+				OutHits.Add(HitArray[i]);
+				i = j;
+				continue;
+			}
+		}
+		if (i == len_tag1 - 1) {
+			OutHits.Add(HitArray[i]);
+		}
+	}
+
+	/*int32 len_tag2 = OutHits.Num();
+	for (int i = len_tag2 -1 ; i > 0;i--) {
+			if (OutHits[i].GetActor() == OutHits[i].GetActor()) {
+				if (OutHits[i].GetActor()->GetFName() == OutHits[i].GetActor()->GetFName()) {
+					OutHits.RemoveAt(i);
+					i = OutHits.Num() - 1;
+					j = i - 1;
+				}
+			}
+		}
+	}*/
 }
+
 
 
 void UAttckComponent::Attack()
@@ -157,16 +228,18 @@ void UAttckComponent::Attack()
 	
 	if (GetOwner()) {
 		AActor* MyOwner = GetOwner();
-		if (m_CurrentAttackActive == AttackMode::RangedAttack) {
+		if (m_CurrentAttackActive == AttackMode::LineAttack) {
 
 			Start = ReleaseDistance(AttackDistance_Y)[0];
 			End = ReleaseDistance(AttackDistance_Y)[1];
 
 			//处理特效
+			Cx_ParticleSystem = Skill->GetWeaponEffectByAttackType(m_iAttackType).LaunchPointParticle;
 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Cx_ParticleSystem,
 				FVector(0.0f), FRotator(0.0f), FVector(0.0f), true, EPSCPoolMethod::None, true);
+			 //生成点特效处理
 			
-			FHitResult Hit = RangedAttack(Start, End);
+			FHitResult Hit = LineAttackTrace(Start, End);
 			if (Hit.bBlockingHit) {
 				AActor* HitActor = Hit.GetActor();
 				m_fDamege = Health->DemageC(m_iAttackType);
@@ -176,9 +249,13 @@ void UAttckComponent::Attack()
 				
 			}
 		}
-		else if (m_CurrentAttackActive == AttackMode::RangedAttackRange) {
-			GetWorld()->GetTimerManager().SetTimer(Handle, this, &UAttckComponent::GetEnemyLocation, 1.5f, false);
+		else if (m_CurrentAttackActive == AttackMode::SphereAttack) {
 			
+			GetWorld()->GetTimerManager().SetTimer(Handle, this, &UAttckComponent::GetEnemyLocation, Skill->GetBaseSkillByAttackType(m_iAttackType).SkillForwardTime, false);
+			
+		}
+		else if (m_CurrentAttackActive == AttackMode::BoxAttack) {
+			GetWorld()->GetTimerManager().SetTimer(Handle, this, &UAttckComponent::BoxAttack, Skill->GetBaseSkillByAttackType(m_iAttackType).SkillForwardTime, false);
 		}
 		
 	}
@@ -192,7 +269,7 @@ void UAttckComponent::SphereMultiChannel(ETraceTypeQuery TraceChannel, float Rad
 }
 
 
-FHitResult UAttckComponent::RangedAttack(FVector StartLocation,FVector EndLocation)
+FHitResult UAttckComponent::LineAttackTrace(FVector StartLocation,FVector EndLocation)
 {
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
@@ -237,7 +314,7 @@ void UAttckComponent::SetAttackActive(const AttackMode CurrentAttackActive)
 
 void UAttckComponent::SetAttackSkill(const AttackSkill CurrentAttackSkill)
 {
-	if (m_CurrentAttackActive == AttackMode::RangedAttack) {
+	if (m_CurrentAttackActive == AttackMode::LineAttack) {
 		if (CurrentAttackSkill != AttackSkill::OrdinaryMagic) {
 			if (CurrentAttackSkill == AttackSkill::Rifle) {
 				m_iAttackType = 1;
@@ -246,19 +323,21 @@ void UAttckComponent::SetAttackSkill(const AttackSkill CurrentAttackSkill)
 			{
 				m_iAttackType = 2;
 			}
-			else if (CurrentAttackSkill == AttackSkill::OpeningTheHeavenlyHateWithOneSword)
-			{
-				m_iAttackType = 3;
-			}
 		}
 	}
-	else if(m_CurrentAttackActive == AttackMode::RangedAttackRange)
+	else if(m_CurrentAttackActive == AttackMode::SphereAttack)
 	{
 		if (CurrentAttackSkill == AttackSkill::OrdinaryMagic) {
 			m_iAttackType = 0;
 		}
 	}
-
+	else if(m_CurrentAttackActive == AttackMode::BoxAttack)
+	{
+		if (CurrentAttackSkill == AttackSkill::OpeningTheHeavenlyHateWithOneSword)
+		{
+			m_iAttackType = 3;
+		}
+	}
 }
 
 

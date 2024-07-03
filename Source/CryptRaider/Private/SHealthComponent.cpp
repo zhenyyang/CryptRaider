@@ -32,7 +32,6 @@ void USHealthComponent::BeginPlay()
 	Health = DefaultsHealth;
 }
 
-
 // Called every frame
 void USHealthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
@@ -50,7 +49,7 @@ void USHealthComponent::HandleTakeAnyDamage(AActor* DamageActor, float Damege, c
 	//¹ã²¥ÉËº¦ÊÂ¼þ
 	OnHealthChanged.Broadcast(this, Health, Damege, DamageType, InstigatedBy, DamegeCause);
 
-	UE_LOG(LogTemp, Log, TEXT("TakeAnyDamage change : "),Health);
+	UE_LOG(LogTemp, Log, TEXT("TakeAnyDamage change : ") , Health);
 }
 
 void USHealthComponent::SetFSTBasicDamage(TArray<FST_BasicDamage> BasicDamageValue)
