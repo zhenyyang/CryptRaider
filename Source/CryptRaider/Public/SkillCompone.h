@@ -4,39 +4,39 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Engine/DataTable.h"
 #include "SkillCompone.generated.h"
 
 class UNiagaraSystem;
 
 USTRUCT(BlueprintType)
-struct FST_Skill {
+struct FST_Skill : public FTableRowBase {
 	GENERATED_BODY()
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "SkillYuanc")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillYuanc")
 		int32 AttackType;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "SkillYuanc")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillYuanc")
 		UNiagaraSystem* ParticleSystem;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "SkillYuanc")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillYuanc")
 		float SkillForwardTime;
-
 };
 
 USTRUCT(BlueprintType)
-struct FST_WeaponEffect {
+struct FST_WeaponEffect : public FTableRowBase {
 	GENERATED_BODY()
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponEffect")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponEffect")
 		int32 AttackType;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponEffect")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponEffect")
 		UParticleSystem* LaunchPointParticle;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponEffect")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponEffect")
 		UParticleSystem* ContactPointParticle;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponEffect")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponEffect")
 		float SkillForwardTime;
 
 };

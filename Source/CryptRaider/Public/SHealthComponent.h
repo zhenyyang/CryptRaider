@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Engine/DataTable.h"
 #include "SHealthComponent.generated.h"
 
 class UDamageType;
@@ -13,24 +14,24 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_SixParams(FOnHealthChangedSignatrue, USHealth
 	, Healthcomp, float, Damege, float, DamegeDelta, const class UDamageType*, DamageType, class AController*, InstigatedBy, AActor*, DamageCauser);
 
 USTRUCT(BlueprintType)
-struct FST_BasicDamage
+struct FST_BasicDamage : public FTableRowBase
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Damage")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
 		int32 AttackType;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Damage")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
 		int32 DamegeLevel;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Damage")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
 		bool bContinuousDamage;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Damage")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
 		float ContinuousDamageTime;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Damage")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
 		float ContinuousDamageRatio;
 
 };
