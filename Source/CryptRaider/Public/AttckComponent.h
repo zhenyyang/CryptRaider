@@ -30,7 +30,7 @@ enum class AttackSkill : uint8
 
 
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class CRYPTRAIDER_API UAttckComponent : public UActorComponent
 {
 	GENERATED_BODY()
@@ -68,6 +68,10 @@ protected:
 
 
 public:
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		void ServerAttack();
+
 	UFUNCTION(BlueprintCallable, Category = "Attack Component")
 		void Attack();
 

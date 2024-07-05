@@ -79,8 +79,10 @@ public:
 	UFUNCTION()
 		void OnHealthChanged(class USHealthComponent* OwnerHealthComp, float Health, float HealthDelta, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamegeCause);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Input)
+	UPROPERTY(Replicated,EditAnywhere, BlueprintReadWrite, Category = Input)
 		bool bDie;
+
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 
 protected:
 	/** Called for movement input */

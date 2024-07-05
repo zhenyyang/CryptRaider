@@ -62,13 +62,14 @@ public:
 
 	float DemageC(int32 AttackType);
 
+	//创建事件分发器；
 	UPROPERTY(BlueprintAssignable, Category = "HealthComponent")
 		FOnHealthChangedSignatrue OnHealthChanged;
 
-	
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite , Category = "HealthComponent")
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite , Category = "HealthComponent")
 		float Health;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "HealthComponent")
@@ -80,8 +81,6 @@ protected:
 	UFUNCTION(BlueprintCallable,Category = "HealthComponent")
 		void HandleTakeAnyDamage(AActor* DamageActor, float Damege,const UDamageType* DamageType,AController *InstigatedBy,AActor* DamegeCause);
 
-	
-private:
 	
 	
 

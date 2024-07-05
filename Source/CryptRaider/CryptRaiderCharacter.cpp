@@ -11,6 +11,7 @@
 #include "AttckComponent.h"
 #include "SHealthComponent.h"
 #include "SkillCompone.h"
+#include "Net/UnrealNetwork.h"
 #include "kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
@@ -36,6 +37,7 @@ void ACryptRaiderCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
+	//绑定一个事件分发器
 	HealthComp->OnHealthChanged.AddDynamic(this, &ACryptRaiderCharacter::OnHealthChanged);
 
 	//Add Input Mapping Context
@@ -75,6 +77,14 @@ void ACryptRaiderCharacter::SetAttackCharactor()
 	UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->bUseControllerRotationYaw = false;
 }
 
+
+void ACryptRaiderCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	//同步数据到所有客户端和服务器
+	DOREPLIFETIME(ACryptRaiderCharacter, bDie);
+
+}
 
 void ACryptRaiderCharacter::Move(const FInputActionValue& Value)
 {

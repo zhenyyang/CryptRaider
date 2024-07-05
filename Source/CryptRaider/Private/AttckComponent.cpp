@@ -27,6 +27,7 @@ UAttckComponent::UAttckComponent()
 	m_iAttackType = 1;
 	ActorsToIgnore.Add(nullptr);
 
+	SetIsReplicated(true);
 }
 
 
@@ -135,8 +136,6 @@ void UAttckComponent::BoxAttack()
 }
 
 
-
-
 void UAttckComponent::GetEnemyLocation()
 {
 	TArray<AActor*> Actors;
@@ -219,10 +218,20 @@ void UAttckComponent::ExcludeRedundantObjects(TArray<FHitResult> HitArray, TArra
 	}*/
 }
 
+void UAttckComponent::ServerAttack_Implementation()
+{
+	Attack();
+}
 
+bool UAttckComponent::ServerAttack_Validate() {
+	return true;
+}
 
 void UAttckComponent::Attack()
 {
+	if (GetOwnerRole() < ROLE_Authority) {
+		ServerAttack();
+	}
 	FVector Start;
 	FVector End;
 	
@@ -315,14 +324,12 @@ void UAttckComponent::SetAttackActive(const AttackMode CurrentAttackActive)
 void UAttckComponent::SetAttackSkill(const AttackSkill CurrentAttackSkill)
 {
 	if (m_CurrentAttackActive == AttackMode::LineAttack) {
-		if (CurrentAttackSkill != AttackSkill::OrdinaryMagic) {
-			if (CurrentAttackSkill == AttackSkill::Rifle) {
-				m_iAttackType = 1;
-			}
-			else if(CurrentAttackSkill == AttackSkill::BowArrow)
-			{
-				m_iAttackType = 2;
-			}
+		if (CurrentAttackSkill == AttackSkill::Rifle) {
+			m_iAttackType = 1;
+		}
+		else if (CurrentAttackSkill == AttackSkill::BowArrow)
+		{
+			m_iAttackType = 2;
 		}
 	}
 	else if(m_CurrentAttackActive == AttackMode::SphereAttack)

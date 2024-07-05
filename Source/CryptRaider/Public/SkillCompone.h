@@ -59,9 +59,11 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	
 	UFUNCTION(BlueprintCallable, Category = "SkillComponent")
 		void SetBaseSkill(TArray<FST_Skill> BaseSkill);
 
+	//拿数据表格
 	UFUNCTION(BlueprintCallable, Category = "SkillComponent")
 		FST_Skill& GetBaseSkillByAttackType(int32 AttackType);
 
@@ -82,5 +84,8 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "HealthComponent")
 		TArray<FST_WeaponEffect> m_WeaponEffect;
+
+	
+
 
 };

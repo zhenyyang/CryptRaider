@@ -4,6 +4,7 @@
 #include "SHealthComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "Net/UnrealNetwork.h"
 
 
 // Sets default values for this component's properties
@@ -17,6 +18,9 @@ USHealthComponent::USHealthComponent()
 	DefaultsDamege = 20;
 
 	m_BasicDamage.Add(FST_BasicDamage());
+
+	SetIsReplicatedByDefault(true);
+
 }
 
 
@@ -25,9 +29,14 @@ void USHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (GetOwner()) {
+	if (GetOwnerRole() != ROLE_Authority) {
+		return;
+	}
+	
+	AActor* MyOwner = GetOwner();
+	if (MyOwner) {
 		//绑定伤害事件
-		GetOwner()->OnTakeAnyDamage.AddDynamic(this, &USHealthComponent::HandleTakeAnyDamage);
+		MyOwner->OnTakeAnyDamage.AddDynamic(this, &USHealthComponent::HandleTakeAnyDamage);
 	}
 	Health = DefaultsHealth;
 }
@@ -64,13 +73,19 @@ float USHealthComponent::DemageC(int32 AttackType)
 	float ContinuousDamageTime = 0.0f;
 	float ContinuousDamageRatio = 0.0f;
 
-	for (const FST_BasicDamage& var : m_BasicDamage) {
-		if (var.AttackType == AttackType) {
-			DamegeLevel = var.DamegeLevel;
-			bContinuousDamage = var.bContinuousDamage;
-			ContinuousDamageTime = var.ContinuousDamageTime;
-			ContinuousDamageRatio = var.ContinuousDamageRatio;
+	UDataTable* DataTableInfo = LoadObject<UDataTable>(nullptr, TEXT("/Script/Engine.DataTable'/Game/DevelopmentContact/Tool/DataTable/ST_BaseDamege.ST_BaseDamege'"));
+	if (!DataTableInfo) {
+		return 0;
+	}
+	for (FName RowName : DataTableInfo->GetRowNames()) {
+		FST_BasicDamage* BD = DataTableInfo->FindRow<FST_BasicDamage>(RowName,"AttackType");
+		if (BD->AttackType == AttackType) {
+			DamegeLevel = BD->DamegeLevel;
+			bContinuousDamage = BD->bContinuousDamage;
+			ContinuousDamageTime = BD->ContinuousDamageTime;
+			ContinuousDamageRatio = BD->ContinuousDamageRatio;
 		}
+	
 	}
 
 	float CouterDamege = DamegeLevel;
@@ -82,5 +97,12 @@ float USHealthComponent::DemageC(int32 AttackType)
 
 	return CouterDamege;
 
+}
+
+void USHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	//同步数据到所有客户端和服务器
+	DOREPLIFETIME(USHealthComponent,Health);
 }
 
